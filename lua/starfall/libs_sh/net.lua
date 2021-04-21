@@ -11,8 +11,12 @@ local checkpermission = SF.Permissions.check
 local net_library = SF.RegisterLibrary("net")
 
 local streams = SF.EntityTable("playerStreams")
+
 local netBurst = SF.EntityTable("NetBurst")
 local netBurstGen = SF.BurstGenObject("net", 5, 10, "Regen rate of net message burst in kB/sec.", "The net message burst limit in kB.", 1000 * 8)
+
+local netCountBurst = SF.EntityTable("NetCountBurst")
+local netCountBurstGen = SF.BurstGenObject("netcount", 100, 150, "Regen rate of net message count in msg/sec.", "The net message count burst limit")
 
 local instances = {}
 SF.AddHook("initialize", function(instance)
@@ -25,6 +29,10 @@ SF.AddHook("initialize", function(instance)
 	if not netBurst[instance.player] then
 		netBurst[instance.player] = netBurstGen:create()
 	end
+
+	if not netCountBurst[instance.player] then
+	    netCountBurst[instance.player] = netCountBurstGen:create()
+    end
 end)
 
 SF.AddHook("cleanup", function (instance)
@@ -66,7 +74,11 @@ function net_library.send (target, unreliable)
 	if not instance.data.net.started then SF.Throw("net message not started", 2) end
 
 	if not netBurst[instance.player]:use(instance.data.net.size) then
-		SF.Throw("Net message exceeds limit!", 3)
+		SF.Throw("Net message exceeds size limit!", 3)
+	end
+
+	if not netCountBurst[instance.player]:use(1) then
+		SF.Throw("Net message exceeds count limit!", 3)
 	end
 
 	local data = instance.data.net.data
@@ -525,6 +537,12 @@ function net_library.receive(name, func)
 	checkluatype (name, TYPE_STRING)
 	if func~=nil then checkluatype (func, TYPE_FUNCTION) end
 	SF.instance.data.net.receives[name] = func
+end
+
+--- Returns available message count allowance
+-- @return number of message allowance remaining
+function net_library.getAmountLeft()
+	return netCountBurst[SF.instance.player]:check()
 end
 
 --- Returns available bandwidth in bytes
