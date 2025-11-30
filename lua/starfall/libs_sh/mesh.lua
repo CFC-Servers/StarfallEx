@@ -125,6 +125,9 @@ function SF.GenerateTangents(vertices, thread_yield, Vector)
 	local dot = v.dot or v.Dot
 	local cross = v.cross or v.Cross
 	local normalize = v.normalize or v.Normalize
+	local Vec_SetUnpacked = getmetatable(v).SetUnpacked
+
+	local sdir, tdir, tan = Vector(0,0,0), Vector(0,0,0), Vector(0,0,0)
 
 	for i = 1, #vertices - 2, 3 do
 		local vert1, vert2, vert3 = vertices[i], vertices[i+1], vertices[i+2]
@@ -146,8 +149,8 @@ function SF.GenerateTangents(vertices, thread_yield, Vector)
 		local t2 = v3 - v1;
 
 		local r = 1 / (s1 * t2 - s2 * t1)
-		local sdir = Vector((t2 * x1 - t1 * x2) * r, (t2 * y1 - t1 * y2) * r, (t2 * z1 - t1 * z2) * r);
-		local tdir = Vector((s1 * x2 - s2 * x1) * r, (s1 * y2 - s2 * y1) * r, (s1 * z2 - s2 * z1) * r);
+		Vec_SetUnpacked(sdir, (t2 * x1 - t1 * x2) * r, (t2 * y1 - t1 * y2) * r, (t2 * z1 - t1 * z2) * r)
+		Vec_SetUnpacked(tdir, (s1 * x2 - s2 * x1) * r, (s1 * y2 - s2 * y1) * r, (s1 * z2 - s2 * z1) * r)
 
 		add(tan1[i], sdir)
 		add(tan1[i+1], sdir)
@@ -164,7 +167,9 @@ function SF.GenerateTangents(vertices, thread_yield, Vector)
 		local n = vertices[i].normal
 		local t = tan1[i]
 
-		local tan = (t - n * dot(n, t))
+		-- local tan = (t - n * dot(n, t))
+		local d = dot(n,t)
+		Vec_SetUnpacked(tan, t.x - n.x * d, t.y - n.y * d, t.z - n.z * d)
 		normalize(tan)
 
 		local w = dot(cross(n, t), tan2[i]) < 0 and -1 or 1
@@ -206,6 +211,7 @@ function SF.GenerateNormals(vertices, inverted, smoothrad, Vector)
 	local add = v.add or v.Add
 	local div = v.div or v.Div
 	smoothrad = math.cos(smoothrad)
+	local Vec_SetUnpacked = getmetatable(v).SetUnpacked
 
 	if inverted then
 		local org = cross
@@ -234,8 +240,9 @@ function SF.GenerateNormals(vertices, inverted, smoothrad, Vector)
 			norm[#norm+1] = vertex.normal
 		end
 
+		local normal = Vector()
 		for _, vertex in ipairs(vertices) do
-			local normal = Vector()
+			Vec_SetUnpacked(normal, 0, 0, 0)
 			local count = 0
 			local pos = vertex.pos
 
@@ -248,7 +255,7 @@ function SF.GenerateNormals(vertices, inverted, smoothrad, Vector)
 
 			if count > 1 then
 				div(normal, count)
-				vertex.normal = normal
+				vertex.normal = Vector(normal)
 			end
 		end
 	end

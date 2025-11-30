@@ -62,11 +62,14 @@ local VECTOR_PLAYER_COLOR_DISABLED = Vector(-1, -1, -1)
 local getent
 local vunwrap1, vunwrap2
 local aunwrap1
+local holo_size_scale_vec = Vector(0,0,0)
+local Vec_SetUnpacked
 instance:AddHook("initialize", function()
 	getent = instance.Types.Entity.GetEntity
 	hologram_meta.__tostring = ent_meta.__tostring
 	vunwrap1, vunwrap2 = vec_meta.QuickUnwrap1, vec_meta.QuickUnwrap2
 	aunwrap1 = ang_meta.QuickUnwrap1
+	Vec_SetUnpacked = vec_meta.SetUnpacked
 end)
 
 instance:AddHook("deinitialize", function()
@@ -426,8 +429,8 @@ function hologram_methods:setSize(size)
 
 	size = vunwrap1(size)
 	local bounds = Ent_OBBMaxs(holo) - Ent_OBBMins(holo)
-	local scale = Vector(size[1] / bounds[1], size[2] / bounds[2], size[3] / bounds[3])
-	Ent_GetTable(holo).SetScale(holo, scale)
+	Vec_SetUnpacked(holo_size_scale_vec, size[1] / bounds[1], size[2] / bounds[2], size[3] / bounds[3])
+	Ent_GetTable(holo).SetScale(holo, holo_size_scale_vec)
 end
 
 --- Gets the hologram scale.
